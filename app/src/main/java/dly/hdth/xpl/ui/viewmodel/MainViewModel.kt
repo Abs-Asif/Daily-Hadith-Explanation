@@ -34,30 +34,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadData() {
         viewModelScope.launch {
-            loadTodayHadith()
-            loadPreviousHadiths()
+            val todayCode = repository.getTodayDateCode()
+            val availableFiles = repository.getAvailableFileList()
+
+            // Determine today's hadith: if present in available files or fetched successfully
+            val todayFileName = "$todayCode.md"
+            val todayHadith = if (availableFiles.contains(todayFileName)) {
+                repository.getHadithByFilename(todayFileName)
+            } else {
+                repository.getHadithForDate(todayCode)
+            }
+
+            // Fetch all available hadiths listed in list.txt
+            val allHadiths = repository.getAllHadithsFromList()
+
+            // Filter out today's hadith from previous hadiths if today's hadith is valid
+            val previousHadiths = if (!todayHadith.isPlaceholder) {
+                allHadiths.filter { it.dateCode != todayHadith.dateCode }
+            } else {
+                allHadiths
+            }
+
+            _uiState.value = _uiState.value.copy(
+                todayHadith = todayHadith,
+                previousHadiths = previousHadiths,
+                isLoadingToday = false,
+                isLoadingPrevious = false
+            )
         }
     }
 
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
-    }
-
-    private suspend fun loadTodayHadith() {
-        val todayCode = repository.getTodayDateCode()
-        val hadith = repository.getHadithForDate(todayCode)
-        _uiState.value = _uiState.value.copy(
-            todayHadith = hadith,
-            isLoadingToday = false
-        )
-    }
-
-    private suspend fun loadPreviousHadiths() {
-        val previous = repository.getPreviousDaysHadiths()
-        _uiState.value = _uiState.value.copy(
-            previousHadiths = previous,
-            isLoadingPrevious = false
-        )
     }
 
     private fun startTodayHadithPolling() {
@@ -66,7 +74,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 delay(30000) // Check every 30 seconds if today's hadith was missing/placeholder
                 val currentToday = _uiState.value.todayHadith
                 if (currentToday == null || currentToday.isPlaceholder) {
-                    loadTodayHadith()
+                    val todayCode = repository.getTodayDateCode()
+                    val todayHadith = repository.getHadithForDate(todayCode)
+                    if (!todayHadith.isPlaceholder) {
+                        val allHadiths = repository.getAllHadithsFromList()
+                        val previousHadiths = allHadiths.filter { it.dateCode != todayHadith.dateCode }
+                        _uiState.value = _uiState.value.copy(
+                            todayHadith = todayHadith,
+                            previousHadiths = previousHadiths,
+                            isLoadingToday = false
+                        )
+                    }
                 }
             }
         }

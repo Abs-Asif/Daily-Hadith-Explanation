@@ -15,7 +15,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dly.hdth.xpl.data.model.Hadith
 import dly.hdth.xpl.ui.components.SimpleMarkdownViewer
-import dly.hdth.xpl.ui.theme.RuposhiBanglaFontFamily
+import dly.hdth.xpl.ui.theme.EkusheyLalsaluFontFamily
 import dly.hdth.xpl.ui.theme.ScheherazadeFontFamily
 import dly.hdth.xpl.ui.viewmodel.MainViewModel
 
@@ -59,7 +58,7 @@ fun HadithDetailScreen(
                 title = {
                     Text(
                         text = "হাদীসের ব্যাখ্যা",
-                        fontFamily = RuposhiBanglaFontFamily,
+                        fontFamily = EkusheyLalsaluFontFamily,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -95,7 +94,7 @@ fun HadithDetailScreen(
                 ) {
                     Text(
                         text = "হাদীস পাওয়া যায়নি",
-                        fontFamily = RuposhiBanglaFontFamily
+                        fontFamily = EkusheyLalsaluFontFamily
                     )
                 }
             } else {
@@ -121,7 +120,7 @@ fun HadithDetailScreen(
                     if (currentHadith.bangla.isNotBlank()) {
                         Text(
                             text = currentHadith.bangla,
-                            fontFamily = RuposhiBanglaFontFamily,
+                            fontFamily = EkusheyLalsaluFontFamily,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Justify,

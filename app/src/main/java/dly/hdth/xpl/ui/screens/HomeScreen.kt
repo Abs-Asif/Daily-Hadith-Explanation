@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,7 +31,7 @@ import dly.hdth.xpl.ui.components.AppHeader
 import dly.hdth.xpl.ui.components.PreviousHadithTile
 import dly.hdth.xpl.ui.components.SearchBarComponent
 import dly.hdth.xpl.ui.components.TodayHadithTile
-import dly.hdth.xpl.ui.theme.RuposhiBanglaFontFamily
+import dly.hdth.xpl.ui.theme.EkusheyLalsaluFontFamily
 import dly.hdth.xpl.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +95,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "পূর্বের হাদীস সমূহ",
-                            fontFamily = RuposhiBanglaFontFamily,
+                            fontFamily = EkusheyLalsaluFontFamily,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                             color = MaterialTheme.colorScheme.primary,
@@ -130,7 +129,7 @@ fun HomeScreen(
                         item {
                             Text(
                                 text = "আজকের হাদীস (ফলাফল)",
-                                fontFamily = RuposhiBanglaFontFamily,
+                                fontFamily = EkusheyLalsaluFontFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 modifier = Modifier.padding(vertical = 4.dp)
@@ -146,7 +145,7 @@ fun HomeScreen(
                         item {
                             Text(
                                 text = "পূর্বের হাদীস সমূহ (ফলাফল)",
-                                fontFamily = RuposhiBanglaFontFamily,
+                                fontFamily = EkusheyLalsaluFontFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 modifier = Modifier.padding(vertical = 8.dp)
@@ -170,7 +169,7 @@ fun HomeScreen(
                             ) {
                                 Text(
                                     text = "কোনো হাদীস পাওয়া যায়নি",
-                                    fontFamily = RuposhiBanglaFontFamily,
+                                    fontFamily = EkusheyLalsaluFontFamily,
                                     fontSize = 16.sp
                                 )
                             }
