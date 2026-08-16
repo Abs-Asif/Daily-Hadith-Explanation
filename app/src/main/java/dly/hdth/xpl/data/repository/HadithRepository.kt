@@ -9,7 +9,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -21,8 +20,8 @@ class HadithRepository(private val context: Context) {
     // Date format for DDMMYY (e.g. 160826 for 16 August 2026)
     private val dateFormat = SimpleDateFormat("ddMMyy", Locale.US)
 
-    // Base URL to fetch from repo raw files (or local fallback)
-    private var baseUrl: String = "https://raw.githubusercontent.com/user/repo/main/hadith/"
+    // Base URL to fetch straight from repo (https://github.com/Abs-Asif/Daily-Hadith-Explanation)
+    private var baseUrl: String = "https://raw.githubusercontent.com/Abs-Asif/Daily-Hadith-Explanation/main/hadith/"
 
     fun setBaseUrl(url: String) {
         baseUrl = url
@@ -32,8 +31,48 @@ class HadithRepository(private val context: Context) {
         return dateFormat.format(Date())
     }
 
-    suspend fun getHadithForDate(dateCode: String): Hadith = withContext(Dispatchers.IO) {
-        val cachedFile = File(cacheDir, "$dateCode.md")
+    suspend fun getAvailableFileList(): List<String> = withContext(Dispatchers.IO) {
+        val cachedListFile = File(cacheDir, "list.txt")
+        val remoteUrl = "${baseUrl}list.txt"
+        val request = Request.Builder().url(remoteUrl).build()
+
+        try {
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val content = response.body?.string() ?: ""
+                if (content.isNotBlank()) {
+                    cachedListFile.writeText(content)
+                    return@withContext parseListFile(content)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Cache fallback
+        if (cachedListFile.exists() && cachedListFile.length() > 0) {
+            return@withContext parseListFile(cachedListFile.readText())
+        }
+
+        // Asset fallback
+        val assetContent = loadAssetFile("list.txt")
+        if (assetContent != null) {
+            cachedListFile.writeText(assetContent)
+            return@withContext parseListFile(assetContent)
+        }
+
+        emptyList()
+    }
+
+    private fun parseListFile(content: String): List<String> {
+        return content.lines()
+            .map { it.trim() }
+            .filter { it.endsWith(".md", ignoreCase = true) }
+    }
+
+    suspend fun getHadithByFilename(fileName: String): Hadith = withContext(Dispatchers.IO) {
+        val dateCode = fileName.removeSuffix(".md")
+        val cachedFile = File(cacheDir, fileName)
         if (cachedFile.exists() && cachedFile.length() > 0) {
             val content = cachedFile.readText()
             val parsed = HadithParser.parse(dateCode, content)
@@ -42,15 +81,15 @@ class HadithRepository(private val context: Context) {
             }
         }
 
-        // Check local assets / local hadith folder fallback first
-        val assetContent = loadFromAssets(dateCode)
+        // Local assets fallback
+        val assetContent = loadAssetFile(fileName)
         if (assetContent != null) {
             cachedFile.writeText(assetContent)
             return@withContext HadithParser.parse(dateCode, assetContent)
         }
 
-        // Fetch remotely
-        val remoteUrl = "$baseUrl$dateCode.md"
+        // Remote fetch
+        val remoteUrl = "$baseUrl$fileName"
         val request = Request.Builder().url(remoteUrl).build()
         try {
             val response = okHttpClient.newCall(request).execute()
@@ -65,28 +104,23 @@ class HadithRepository(private val context: Context) {
             e.printStackTrace()
         }
 
-        // If fetch failed and no cached non-placeholder file, return placeholder
         HadithParser.createPlaceholder(dateCode)
     }
 
-    suspend fun getPreviousDaysHadiths(count: Int = 15): List<Hadith> = withContext(Dispatchers.IO) {
-        val list = mutableListOf<Hadith>()
-        val calendar = Calendar.getInstance()
-
-        for (i in 1..count) {
-            calendar.add(Calendar.DAY_OF_YEAR, -1)
-            val dateCode = dateFormat.format(calendar.time)
-            val hadith = getHadithForDate(dateCode)
-            if (!hadith.isPlaceholder) {
-                list.add(hadith)
-            }
-        }
-        list
+    suspend fun getHadithForDate(dateCode: String): Hadith {
+        return getHadithByFilename("$dateCode.md")
     }
 
-    private fun loadFromAssets(dateCode: String): String? {
+    suspend fun getAllHadithsFromList(): List<Hadith> = withContext(Dispatchers.IO) {
+        val fileList = getAvailableFileList()
+        fileList.map { fileName ->
+            getHadithByFilename(fileName)
+        }.filter { !it.isPlaceholder }
+    }
+
+    private fun loadAssetFile(fileName: String): String? {
         return try {
-            context.assets.open("hadith/$dateCode.md").bufferedReader().use { it.readText() }
+            context.assets.open("hadith/$fileName").bufferedReader().use { it.readText() }
         } catch (e: Exception) {
             null
         }
