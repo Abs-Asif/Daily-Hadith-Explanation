@@ -57,7 +57,6 @@ class HadithRepository(private val context: Context) {
         // Asset fallback
         val assetContent = loadAssetFile("list.txt")
         if (assetContent != null) {
-            cachedListFile.writeText(assetContent)
             return@withContext parseListFile(assetContent)
         }
 
@@ -73,6 +72,27 @@ class HadithRepository(private val context: Context) {
     suspend fun getHadithByFilename(fileName: String): Hadith = withContext(Dispatchers.IO) {
         val dateCode = fileName.removeSuffix(".md")
         val cachedFile = File(cacheDir, fileName)
+
+        // Priority 1: Remote fetch straight from GitHub repo
+        val remoteUrl = "$baseUrl$fileName"
+        val request = Request.Builder().url(remoteUrl).build()
+        try {
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val content = response.body?.string() ?: ""
+                if (content.isNotEmpty()) {
+                    val parsed = HadithParser.parse(dateCode, content)
+                    if (!parsed.isPlaceholder) {
+                        cachedFile.writeText(content)
+                        return@withContext parsed
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Priority 2: Cached file fallback (if remote unavailable/failed)
         if (cachedFile.exists() && cachedFile.length() > 0) {
             val content = cachedFile.readText()
             val parsed = HadithParser.parse(dateCode, content)
@@ -81,27 +101,10 @@ class HadithRepository(private val context: Context) {
             }
         }
 
-        // Local assets fallback
+        // Priority 3: Local assets fallback (preloaded default data)
         val assetContent = loadAssetFile(fileName)
         if (assetContent != null) {
-            cachedFile.writeText(assetContent)
             return@withContext HadithParser.parse(dateCode, assetContent)
-        }
-
-        // Remote fetch
-        val remoteUrl = "$baseUrl$fileName"
-        val request = Request.Builder().url(remoteUrl).build()
-        try {
-            val response = okHttpClient.newCall(request).execute()
-            if (response.isSuccessful) {
-                val content = response.body?.string() ?: ""
-                if (content.isNotEmpty()) {
-                    cachedFile.writeText(content)
-                    return@withContext HadithParser.parse(dateCode, content)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
 
         HadithParser.createPlaceholder(dateCode)
